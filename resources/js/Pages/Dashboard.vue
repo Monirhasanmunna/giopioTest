@@ -19,14 +19,14 @@ const checkedItem = ref({});
 
 
 const search = ()=>{
-    if(searchItem.value != null){
+    if(searchItem.value != null && searchItem.value != ''){
         allUsers.value = props.users.filter(user => (user.name == searchItem.value) || (user.email == searchItem.value) );
         router.post(route('storeSearch'), searchItem, {
             only: ['searches'],
             preserveScroll: true,
             preserveState: true,
+            onSuccess: ()=> searchItem.value = ''
         });
-        
     }else{
         allUsers.value = props.users
     }
