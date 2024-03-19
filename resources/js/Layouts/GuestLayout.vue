@@ -5,7 +5,7 @@ import { Link } from '@inertiajs/vue3';
 
 <template>
     <div class="w-full min-h-screen bg-[#F5F7FD] ">
-        <div class="container mx-auto max-h-screen min-h-screen flex flex-col justify-between">
+        <div class="container mx-auto  min-h-screen flex flex-col justify-between">
             <slot />
         </div>
     </div>

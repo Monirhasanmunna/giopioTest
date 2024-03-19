@@ -2,7 +2,92 @@
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import SearchIcon from '@/Components/Icons/SearchIcon.vue';
 import CloseIcon from '@/Components/Icons/CloseIcon.vue';
+import { reactive, ref, watch } from 'vue';
+import { router } from '@inertiajs/vue3';
+import { debounce } from 'lodash';
 
+
+const props = defineProps({
+    users: {Array},
+    searches: {Array},
+});
+
+
+const searchItem = reactive({ value: null });
+const allUsers = ref(props.users);
+const checkedItem = ref({});
+
+
+const search = ()=>{
+    if(searchItem.value != null){
+        allUsers.value = props.users.filter(user => (user.name == searchItem.value) || (user.email == searchItem.value) );
+        router.post(route('storeSearch'), searchItem, {
+            only: ['searches'],
+            preserveScroll: true,
+            preserveState: true,
+        });
+        
+    }else{
+        allUsers.value = props.users
+    }
+}
+
+
+const getcheckedItem = (user)=>{
+    if(!checkedItem.value[user.id]){
+        checkedItem.value[user.id] = user;
+    }else{
+        delete checkedItem.value[user.id];
+    }
+}
+
+const deleteItem = (id)=>{
+    delete checkedItem.value[id]
+}
+
+const isDisabled = ref(false);
+
+const deleteSearch = (id)=>{
+    isDisabled.value = true
+
+    router.delete(route('deleteSearch', id), {
+        only: ['searches'],
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: ()=> isDisabled.value = false
+    });
+}
+
+const checkAll = (event)=>{
+    if(event.target.checked == true){
+        props.users.map(user => {
+            checkedItem.value[user.id] = {name:user.name, id:user.id}
+        });
+    }else{
+        checkedItem.value = {}
+    }
+}
+
+const lat1 = 23.777176;
+const lon1 = 90.399452;
+
+const calculateDistance = (lat2, lon2)=>{
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // Distance in kilometers
+    return distance.toFixed(2);
+}
+
+// Function to convert degrees to radians
+function deg2rad(deg) {
+    return deg * (Math.PI / 180);
+}
 
 </script>
 
@@ -13,7 +98,7 @@ import CloseIcon from '@/Components/Icons/CloseIcon.vue';
                 <!-- search bar -->
                 <div class="w-full bg-[#FFFFFF] flex justify-between items-center border border-gray-200 rounded-md">
                     <div class="relative flex rounded-lg w-full items-center">
-                        <input type="text" placeholder="Enter to search"
+                        <input type="text" placeholder="Enter to search" v-model="searchItem.value"
                             id="hs-trailing-button-add-on-with-icon-and-button"
                             name="hs-trailing-button-add-on-with-icon-and-button"
                             class="py-3 px-4 ps-11 ml-3 block w-full border-none  rounded-s-lg text-sm focus:z-10 focus:border-none focus:ring-0 disabled:opacity-50 disabled:pointer-events-none placeholder:text-[17px] placeholder:text-gray-400 ">
@@ -24,7 +109,7 @@ import CloseIcon from '@/Components/Icons/CloseIcon.vue';
                                 <circle cx="11" cy="11" r="8" />
                                 <path d="m21 21-4.3-4.3" /></svg>
                         </div>
-                        <button type="button"
+                        <button type="button" @click="search"
                             class=" hidden py-2 px-5 m-[10px] font-manrope sm:inline-flex justify-center items-center gap-x-2 text-[18px] rounded-md  bg-gradient-to-r from-[#2F55DB] to-[#42BBFF] text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none">
                             <SearchIcon class="text-[22px]" />
                             <span>Explore</span>
@@ -43,28 +128,23 @@ import CloseIcon from '@/Components/Icons/CloseIcon.vue';
                         </div>
                     </div>
 
-                    <div class="md:min-w-[130px] rounded-md border border-gray-300 flex items-center px-2 py-[7px]">
+                    <div v-for="(search,index) in searches" :key="index" class="md:min-w-[130px] rounded-md border border-gray-300 flex items-center px-2 py-[7px]">
                         <div class="w-full flex justify-between gap-3 items-center">
-                            <h6 class="font-manrope text-[12px] text-gray-600">Leanne Graham</h6>
-                            <CloseIcon class="text-gray-500" />
+                            <h6 class="font-manrope text-[12px] text-gray-600">{{ search.name }}</h6>
+                            <button @click="deleteSearch(search.id)" :disabled="isDisabled" ><CloseIcon class="text-gray-500" /></button>
                         </div>
                     </div>
 
-                    <div class="md:min-w-[130px]  rounded-md border border-gray-300 flex items-center px-2 py-[7px]">
-                        <div class="w-full flex justify-between gap-3 items-center">
-                            <h6 class="font-manrope text-[12px] text-gray-600">Leanne Graham</h6>
-                            <CloseIcon class="text-gray-500" />
-                        </div>
-                    </div>
                 </div>
                 <!-- search result -->
             </div>
+
 
             <div class="w-full mt-[40px] space-y-3">
                 <div class="w-full flex justify-between">
                     <h6 class="font-semibold text-[#344054] text-[16px]">Selection</h6>
                     <div class="text-[14px] font-semibold bg-gradient-to-r from-[#2F55DB] to-[#3EA6F8] inline-block text-transparent bg-clip-text font-manrope">
-                        Clear selection
+                       <button @click="checkedItem = {}">Clear selection</button> 
                     </div>
                 </div>
 
@@ -72,20 +152,12 @@ import CloseIcon from '@/Components/Icons/CloseIcon.vue';
                 <div class="h-auto md:min-h-[82px] rounded-md w-full bg-gradient-to-r from-[#2F55DB] to-[#42BBFF] p-[1px]">
                     <div class="flex flex-wrap gap-4 h-auto min-h-[82px] w-full rounded-md  bg-[#FFFFFF] back p-3">
                         <!-- selected items -->
-                        <div class="bg-[#E0F3FF] h-[30px] rounded-md flex gap-5 justify-between items-center px-3">
-                            <h6 class="text-sm md:text-md">Clementine Bauch</h6>
-                            <CloseIcon class="text-gray-500 text-[20px]" />
+                        <div v-if="Object.keys(checkedItem).length > 0" v-for=" item in checkedItem" :key="item.id" class="bg-[#E0F3FF] h-[30px] rounded-md flex gap-5 justify-between items-center px-3">
+                            <h6 class="text-sm md:text-md">{{ item.name }}</h6>
+                            <CloseIcon class="text-gray-500 text-[20px]" @click="deleteItem(item.id)" />
                         </div>
-                        <div class="bg-[#E0F3FF] h-[30px] rounded-md flex gap-5 justify-between items-center px-3">
-                            <h6 class="text-sm md:text-md">Clementine Bauch</h6>
-                            <CloseIcon class="text-gray-500 text-[20px]" />
-                        </div>
-                        <div class="bg-[#E0F3FF] h-[30px] rounded-md flex gap-5 justify-between items-center px-3">
-                            <h6 class="text-sm md:text-md">Clementine Bauch</h6>
-                            <CloseIcon class="text-gray-500 text-[20px]" />
-                        </div>
-
                         <!-- selected items -->
+                        <h6 v-else class="text-gray-400">Click Name below to add them to your selection</h6>
                     </div>
                 </div>
 
@@ -100,7 +172,7 @@ import CloseIcon from '@/Components/Icons/CloseIcon.vue';
                                     <tr>
                                     <th width="1%" class="py-3 ps-4">
                                         <div class="flex items-center h-5">
-                                        <input id="hs-table-checkbox-all" type="checkbox" class="border-gray-300 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800">
+                                        <input id="hs-table-checkbox-all"  @input="checkAll" type="checkbox" class="border-gray-300 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800">
                                         <label for="hs-table-checkbox-all" class="sr-only">Checkbox</label>
                                         </div>
                                     </th>
@@ -109,15 +181,15 @@ import CloseIcon from '@/Components/Icons/CloseIcon.vue';
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                                    <tr>
+                                    <tr v-for="(user, index) in allUsers" :key="index">
                                         <td class="py-3 ps-4">
                                             <div class="flex items-center h-5">
-                                            <input id="hs-table-checkbox-1" type="checkbox" class="border-gray-300 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800">
-                                            <label for="hs-table-checkbox-1" class="sr-only">Checkbox</label>
+                                            <input :id="'user-'+user.id" :value="user.id" :checked="checkedItem[user.id]" @change="getcheckedItem({name:user.name, id:user.id})" type="checkbox" class="border-gray-300 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800">
+                                            <label :for="'user-'+user.id" class="sr-only">Checkbox</label>
                                             </div>
                                         </td>
-                                        <td class="px-6 font-manrope py-4 whitespace-nowrap text-[15px]  text-[#344054]">John Brown</td>
-                                        <td class="px-6 font-manrope py-4 whitespace-nowrap text-center text-[15px] text-[#344054]">45</td>
+                                        <td class="px-6 font-manrope py-4 whitespace-nowrap text-[15px]  text-[#344054]">{{user.name}}</td>
+                                        <td class="px-6 font-manrope py-4 whitespace-nowrap text-center text-[15px] text-[#344054]">{{ calculateDistance(user.address.geo.lat, user.address.geo.lng)}} K</td>
                                     </tr>
                                 </tbody>
                                 </table>
@@ -129,8 +201,8 @@ import CloseIcon from '@/Components/Icons/CloseIcon.vue';
             </div>
         </div>
 
-        <div class="p-3 sm:hidden">
-            <button type="button" class=" py-3 px-5 m-[10px] w-full font-manrope justify-center items-center inline-flex gap-x-2 text-[18px] rounded-md  bg-gradient-to-r from-[#2F55DB] to-[#42BBFF] text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none">
+        <div class="px-5 py-8 sm:hidden"> 
+            <button type="button" @click="search" class="py-3 px-5 w-full font-manrope justify-center items-center inline-flex gap-x-2 text-[18px] rounded-md  bg-gradient-to-r from-[#2F55DB] to-[#42BBFF] text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none">
                 <SearchIcon class="text-[22px]" />
                 <span>Explore</span>
             </button>
