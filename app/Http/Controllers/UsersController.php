@@ -12,34 +12,32 @@ class UsersController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $input = $request->input('value');
+        if($input){ $this->storeSearch($input); }
         $searches = SearchHistory::latest()->take(5)->get();
+        $products = Http::get('https://dailydealsdiscounts.com/api/client/product?title='.$input);
 
-
+        
         return Inertia::render('Dashboard', [
-            'users' => Http::get('https://jsonplaceholder.typicode.com/users')->json(),
+            'products' => $products->json(),
             'searches' => $searches
         ]);
     }
 
 
-    public function storeSearch(Request $request)
+    public function storeSearch($search)
     {
         SearchHistory::create([
-            'name' => $request->value
+            'name' => $search
         ]);
-
-        $this->index();
-
-        return redirect()->back();
     }
 
     public function deleteSearch($id)
     {
         SearchHistory::find($id)->delete();
-        $this->index();
-        return redirect()->back();
+        return to_route('index');
     }
     /**
      * Show the form for creating a new resource.

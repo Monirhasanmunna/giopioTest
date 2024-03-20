@@ -38,7 +38,7 @@ Route::middleware('auth')->group(function () {
 
 
 Route::get('/', [UsersController::class, 'index'])->name('index');
-Route::post('/search/store', [UsersController::class, 'storeSearch'])->name('storeSearch');
+// Route::post('/search/store', [UsersController::class, 'storeSearch'])->name('storeSearch');
 Route::delete('/search/delete/{id}', [UsersController::class, 'deleteSearch'])->name('deleteSearch');
 
 require __DIR__.'/auth.php';

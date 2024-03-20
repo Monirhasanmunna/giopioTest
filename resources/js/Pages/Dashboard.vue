@@ -8,36 +8,31 @@ import { debounce } from 'lodash';
 
 
 const props = defineProps({
-    users: {Array},
+    products: {Object},
     searches: {Array},
 });
 
+console.log(props.products.data)
+
 
 const searchItem = reactive({ value: null });
-const allUsers = ref(props.users);
 const checkedItem = ref({});
 
 
 const search = ()=>{
-    if(searchItem.value != null && searchItem.value != ''){
-        allUsers.value = props.users.filter(user => (user.name == searchItem.value) || (user.email == searchItem.value) );
-        router.post(route('storeSearch'), searchItem, {
-            only: ['searches'],
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: ()=> searchItem.value = ''
-        });
-    }else{
-        allUsers.value = props.users
-    }
+    router.get(route('index'), searchItem, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: ()=> searchItem.value = ''
+    });
 }
 
 
-const getcheckedItem = (user)=>{
-    if(!checkedItem.value[user.id]){
-        checkedItem.value[user.id] = user;
+const getcheckedItem = (product)=>{
+    if(!checkedItem.value[product.id]){
+        checkedItem.value[product.id] = product;
     }else{
-        delete checkedItem.value[user.id];
+        delete checkedItem.value[product.id];
     }
 }
 
@@ -51,7 +46,7 @@ const deleteSearch = (id)=>{
     isDisabled.value = true
 
     router.delete(route('deleteSearch', id), {
-        only: ['searches'],
+        only:['searches'],
         preserveScroll: true,
         preserveState: true,
         onSuccess: ()=> isDisabled.value = false
@@ -60,8 +55,8 @@ const deleteSearch = (id)=>{
 
 const checkAll = (event)=>{
     if(event.target.checked == true){
-        props.users.map(user => {
-            checkedItem.value[user.id] = {name:user.name, id:user.id}
+        props.products.data.data.map(product => {
+            checkedItem.value[product.id] = {name:product.title, id:product.id}
         });
     }else{
         checkedItem.value = {}
@@ -181,15 +176,15 @@ function deg2rad(deg) {
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                                    <tr v-for="(user, index) in allUsers" :key="index">
+                                    <tr v-for="(product, index) in products.data.data" :key="index">
                                         <td class="py-3 ps-4">
                                             <div class="flex items-center h-5">
-                                            <input :id="'user-'+user.id" :value="user.id" :checked="checkedItem[user.id]" @change="getcheckedItem({name:user.name, id:user.id})" type="checkbox" class="border-gray-300 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800">
-                                            <label :for="'user-'+user.id" class="sr-only">Checkbox</label>
+                                            <input :id="'product-'+product.id" :value="product.id" :checked="checkedItem[product.id]" @change="getcheckedItem({name:product.title, id:product.id})" type="checkbox" class="border-gray-300 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800">
+                                            <label :for="'product-'+product.id" class="sr-only">Checkbox</label>
                                             </div>
                                         </td>
-                                        <td class="px-6 font-manrope py-4 whitespace-nowrap text-[15px]  text-[#344054]">{{user.name}}</td>
-                                        <td class="px-6 font-manrope py-4 whitespace-nowrap text-center text-[15px] text-[#344054]">{{ calculateDistance(user.address.geo.lat, user.address.geo.lng)}} K</td>
+                                        <td class="px-6 font-manrope py-4 whitespace-nowrap text-[15px]  text-[#344054]">{{product.title}}</td>
+                                        <td class="px-6 font-manrope py-4 whitespace-nowrap text-center text-[15px] text-[#344054]">{{ calculateDistance(product.location_latitude, product.location_longitude)}} K</td>
                                     </tr>
                                 </tbody>
                                 </table>
